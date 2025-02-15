@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Security</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<header>
+    <div class="navbar">
+        <h1>Security Platform</h1>
+    </div>
+</header>
+
+<body>
+    <div class="container">
+        <p id="summary"></p>
+        <h2>Punteggio Rischio</h2>
+        <canvas id="rischioGraf"></canvas>
+
+        <div class="filter-container">
+            <button class="btn" onclick="showDettagli('Vulnerabilità')">Dettagli Vulnerabilità</button>
+        </div>
+        <div id="dettagliContainer"></div>
+    </div>
+    <script>
+        //funzione che mostra i dettagli
+        function showDettagli(type) {
+            let dettagliContent = '';
+
+            if (type === 'Vulnerabilità') {
+                dettagliContent = `
+                    <h3>Dettagli Vulnerabilità</h3>
+                        <li>Medie Attive: ${summaryData.results[0].n_vulns.active.medium}</li>
+                        <li>Vulnerabilità Passive di Alto Livello: ${summaryData.results[0].n_vulns.passive.high}</li>
+                        <li>Vulnerabilità Passive di Media Gravità:${summaryData.results[0].n_vulns.passive.medium}</li>
+                        <li>Vulnerabilità Critiche Attive: ${summaryData.results[0].n_vulns.active.critical}</li>
+                        <li>Vulnerabilità Informative:${summaryData.results[0].n_vulns.total.info}</li>
+                    
+                `;
+            }
+            document.getElementById('dettagliContainer').innerHTML = dettagliContent;
+        }
+        let summaryData = null;
+        async function fetchData() {
+            const response = await fetch("/api/summary");
+            summaryData = await response.json();
+            //inserimento testo dal json
+            document.getElementById("summary").textContent = summaryData.results[0].summary_text;
+
+            // punteggi dei rischi
+            const rischio_maggiore = [
+                summaryData.results[0].servizi_esposti_score,
+                summaryData.results[0].dataleak_score,
+                summaryData.results[0].blacklist_score,
+                summaryData.results[0].certificate_score,
+                summaryData.results[0].open_ports_score
+            ];
+
+            // ordino i punteggi dal piu grande al piu piccolo
+            rischio_maggiore.sort((a, b) => b - a);
+
+            const colors = ["red", "orange", "black", "purple", "green"];
+
+            //assegno i colori a secondo del rischio
+            const backgroundColor = rischio_maggiore.map(score => {
+                return colors[rischio_maggiore.indexOf(score)];
+            });
+
+            // disegno il grafico a torta con la legenda
+            const ctx = document.getElementById("rischioGraf").getContext("2d");
+            new Chart(ctx, {
+                type: "pie",
+                data: {
+                    datasets: [{
+                        label: "Rischio",
+                        data: rischio_maggiore,
+                        backgroundColor: backgroundColor
+                    }],
+                    labels: ["Servizi Esposti", "Data Leak", "Blacklist", "Certificati", "Open Ports"]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        fetchData();
+    </script>
+
+</body>
+
+<footer>
+    <p>&copy; 2025 Security Platform. Tutti i diritti riservati.</p>
+</footer>
+
+</html>
