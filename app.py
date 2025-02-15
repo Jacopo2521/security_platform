@@ -10,7 +10,7 @@ def load_summary():
 
 @app.route("/")
 def index():
-    return render_template("home.html")
+    return render_template("index.html")
 
 # API per ottenere i dati dal JSON
 @app.route("/api/summary")
